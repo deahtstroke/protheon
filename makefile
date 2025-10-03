@@ -5,16 +5,14 @@ BINARY=protheon
 .PHONY: rabbit-up rabbit-down rabbit-logs
 
 rabbit-up:
-	docker run -d --rm \
+	docker run -d --rm\
 		--hostname rabbit \
 		--name $(RABBIT_CONTAINER) \
+		-e RABBITMQ_DEFAULT_USER=protheon \
+		-e RABBITMQ_DEFAULT_PASS=secretpassword \
 		-p 5672:5672 \
 		-p 15672:15672 \
 		$(RABBIT_IMAGE)
-	docker exec -it rabbitmq rabbitmqctl add_user protheon secretpassword
-	docker exec -it rabbitmq rabbitmqctl set_user_tags protheon administrator
-	docker exec -it rabbitmq rabbitmqctl set_permissions -p / protheon ".*" ".*" ".*"
-
 rabbit-down:
 	docker stop $(RABBIT_CONTAINER)
 

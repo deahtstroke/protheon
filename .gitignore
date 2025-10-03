@@ -30,6 +30,9 @@ go.work.sum
 # binaries
 bin/
 
+# DS Store
+.DS_Store
+
 # Editor/IDE
 # .idea/
 # .vscode/
