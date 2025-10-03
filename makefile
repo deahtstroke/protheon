@@ -29,3 +29,6 @@ build-mac:
 
 release: build-linux build-mac
 	@echo "Release build complete in ./bin"
+
+run-server:
+	./bin/protheon-darwin-arm64 --role=server

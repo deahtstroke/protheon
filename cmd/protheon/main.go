@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -19,26 +20,33 @@ type Job struct {
 	Data string `json:"data"`
 }
 
-func dialWithRetry(url string, attempts int, backoff time.Duration) (*amqp091.Connection, error) {
+func dialWithRetry(ctx context.Context, url string, attempts int, backoff time.Duration) (*amqp091.Connection, error) {
 	var conn *amqp091.Connection
 	var err error
 	for i := range attempts {
-		conn, err = amqp091.Dial(url)
-		if err == nil {
-			return conn, nil
+		select {
+		case <-ctx.Done():
+			log.Printf("Context cancelled, dialing cancelled...")
+			return nil, errors.New("Dialing cancelled")
+		default:
+			conn, err = amqp091.Dial(url)
+			if err == nil {
+				return conn, nil
+			}
+			log.Printf("amqp dial failed (attempt %d/%d): %v", i+1, attempts, err)
+			time.Sleep(backoff)
+			backoff *= 2
 		}
-		log.Printf("amqp dial failed (attempt %d/%d): %v", i+1, attempts, err)
-		time.Sleep(backoff)
-		backoff *= 2
 	}
 	return nil, err
 }
 
 func runServer(ctx context.Context) {
-	conn, err := dialWithRetry("amqp://protheon:secretpassword@localhost:5672/", 5, 1*time.Second)
+	conn, err := dialWithRetry(ctx, "amqp://protheon:secretpassword@localhost:5672/", 5, 1*time.Second)
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %s", err)
 	}
+
 	defer conn.Close()
 	log.Printf("Connected to RabbitMQ successfully!")
 
@@ -95,11 +103,12 @@ func runServer(ctx context.Context) {
 }
 
 func runWorker(ctx context.Context, rabbitUrl string) {
-	conn, err := dialWithRetry(rabbitUrl, 5, 1*time.Second)
+	conn, err := dialWithRetry(ctx, rabbitUrl, 5, 1*time.Second)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
+	log.Printf("Connected to Host RabbitMQ!")
 
 	ch, err := conn.Channel()
 	if err != nil {
