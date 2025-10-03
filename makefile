@@ -27,8 +27,15 @@ build-mac:
 	@echo "Building Mac/arm64 binary..."
 	GOOS=darwin GOARCH=arm64 go build -o bin/$(BINARY)-darwin-arm64 cmd/protheon/main.go
 
-release: build-linux build-mac
+build-windows:
+	@echo "Building Windows/amd64 binary..."
+	GOOS=windows GOARCH=amd64 go build -o bin/$(BINARY)-windows.exe cmd/protheon/main.go
+
+release: build-linux build-mac build-windows
 	@echo "Release build complete in ./bin"
 
 run-server:
 	./bin/protheon-darwin-arm64 --role=server
+
+clean:
+	rm -rf bin/*
