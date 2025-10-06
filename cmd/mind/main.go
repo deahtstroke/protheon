@@ -24,15 +24,8 @@ type Job struct {
 	Data string `json:"data"`
 }
 
-type HeartBeat struct {
-	ID          string    `json:"id"`
-	JobsDone    int       `json:"jobs_done"`
-	LastJobTime time.Time `json:"last_job_time"`
-	Uptime      string    `json:"uptime"`
-}
-
 func sendHeartbeat(managerURL, workerID string, jobsDone int, lastJob time.Time, start time.Time) {
-	hb := HeartBeat{
+	hb := api.HeartbeatRequest{
 		ID:          workerID,
 		JobsDone:    jobsDone,
 		LastJobTime: lastJob,
@@ -49,13 +42,17 @@ func sendHeartbeat(managerURL, workerID string, jobsDone int, lastJob time.Time,
 	resp.Body.Close()
 }
 
-func startHeartbeat(managerURL, workerID string, jobsDone *int, lastJob *time.Time, start *time.Time) {
+func startHeartbeat(ctx context.Context, managerURL, workerID string, jobsDone *int, lastJob *time.Time, start *time.Time) {
 	ticker := time.NewTicker(5 * time.Second)
-	go func() {
-		for range ticker.C {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Hearbeat shutting down...")
+			return
+		case <-ticker.C:
 			sendHeartbeat(managerURL, workerID, *jobsDone, *lastJob, *start)
 		}
-	}()
+	}
 }
 
 func dialWithRetry(ctx context.Context, url string, attempts int, backoff time.Duration) (*amqp091.Connection, error) {
@@ -116,7 +113,7 @@ func register(serverAddr string) (*api.RegisterResponse, error) {
 	return &regResp, nil
 }
 
-func runWorker(ctx context.Context, serverAddr string) {
+func DoJobs(ctx context.Context, serverAddr string) {
 	rabbitURL := fmt.Sprintf("amqp://protheon:secretpassword@%s:5672/", serverAddr)
 	conn, err := dialWithRetry(ctx, rabbitURL, 5, 1*time.Second)
 	if err != nil {
@@ -185,17 +182,19 @@ func main() {
 	serverAddr := flag.String("server-addr", "", "Server URL")
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	start := time.Now()
 
 	if *serverAddr == "" {
 		fmt.Println("Unknown server url, use --server-addr")
 		os.Exit(1)
 	}
 
-	_, err := register(*serverAddr)
+	resp, err := register(*serverAddr)
 	if err != nil {
-		fmt.Println("Error register worker: %v", err)
+		fmt.Printf("Error register worker: %v", err)
 		os.Exit(1)
 	}
 
-	runWorker(ctx, *serverAddr)
+	go startHeartbeat(ctx, fmt.Sprintf("%s:8080", *serverAddr), resp.ID, nil, nil, &start)
+	go DoJobs(ctx, *serverAddr)
 }

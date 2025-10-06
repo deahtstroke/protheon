@@ -72,6 +72,22 @@ func registerWorker(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("[Conductor] Worker registered: %+v\n", worker)
 }
 
+func receiveHeartbeat(w http.ResponseWriter, r *http.Request) {
+	var req api.HeartbeatRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	workersMu.Lock()
+	_, ok := workers[req.ID]
+	workersMu.Unlock()
+
+	if !ok {
+		log.Printf("Unable to find worker with Id [%s]", req.ID)
+	}
+}
+
 func dialWithRetry(ctx context.Context, url string, attempts int, backoff time.Duration) (*amqp091.Connection, error) {
 	var conn *amqp091.Connection
 	var err error
@@ -160,6 +176,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/mind/register", registerWorker).Methods("POST")
+	r.HandleFunc("/mind/heartbet", receiveHeartbeat).Methods("POST")
 
 	go EmitJobs(ctx)
 

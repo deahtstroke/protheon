@@ -1,6 +1,7 @@
 RABBIT_CONTAINER=rabbitmq
 RABBIT_IMAGE=rabbitmq:3-management
-BINARY=protheon
+CONDUCTOR=protheon-conductor
+MIND=protheon-mind
 
 .PHONY: rabbit-up rabbit-down rabbit-logs
 
@@ -21,15 +22,18 @@ rabbit-logs:
 
 build-linux:
 	@echo "Building Linux/amd64 binary..."
-	GOOS=linux GOARCH=amd64 go build -o bin/$(BINARY)-linux-amd64 cmd/protheon/main.go
+	GOOS=linux GOARCH=amd64 go build -o bin/$(CONDUCTOR)-linux-amd64 cmd/conductor/main.go
+	GOOS=linux GOARCH=amd64 go build -o bin/$(MIND)-linux-amd64 cmd/mind/main.go
 
 build-mac:
 	@echo "Building Mac/arm64 binary..."
-	GOOS=darwin GOARCH=arm64 go build -o bin/$(BINARY)-darwin-arm64 cmd/protheon/main.go
+	GOOS=darwin GOARCH=arm64 go build -o bin/$(CONDUCTOR)-darwin-arm64 cmd/conductor/main.go
+	GOOS=darwin GOARCH=arm64 go build -o bin/$(MIND)-darwin-arm64 cmd/mind/main.go
 
 build-windows:
 	@echo "Building Windows/amd64 binary..."
-	GOOS=windows GOARCH=amd64 go build -o bin/$(BINARY)-windows.exe cmd/protheon/main.go
+	GOOS=windows GOARCH=amd64 go build -o bin/$(CONDUCTOR)-windows.exe cmd/conductor/main.go
+	GOOS=windows GOARCH=amd64 go build -o bin/$(MIND)-windows.exe cmd/mind/main.go
 
 release: build-linux build-mac build-windows
 	@echo "Release build complete in ./bin"
