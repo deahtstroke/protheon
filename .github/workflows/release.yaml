@@ -29,9 +29,9 @@ jobs:
 
       # Requires permissions
       - name: Create Github Release
-        uses: softprops/actions-gh-release@v2
+        uses: softprops/action-gh-release@v2
         with:
           files: bin/**
-          name: Protheon v${{ github.ref }}
+          name: Protheon ${{ github.ref }}
           body: "Automated Protheon release"
           prerelease: true
