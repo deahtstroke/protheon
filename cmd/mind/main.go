@@ -28,7 +28,7 @@ func sendHeartbeat(managerURL, workerID string, jobsDone int, lastJob time.Time,
 	hb := api.HeartbeatRequest{
 		ID:          workerID,
 		JobsDone:    jobsDone,
-		LastJobTime: lastJob,
+		LastJobTime: time.Now(),
 		Uptime:      time.Since(start).String(),
 	}
 
@@ -180,6 +180,7 @@ func DoJobs(ctx context.Context, serverAddr string) {
 
 func main() {
 	serverAddr := flag.String("server-addr", "", "Server URL")
+	flag.Parse()
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	start := time.Now()

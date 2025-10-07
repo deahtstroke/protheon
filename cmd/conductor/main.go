@@ -80,11 +80,13 @@ func receiveHeartbeat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workersMu.Lock()
-	_, ok := workers[req.ID]
+	worker, ok := workers[req.ID]
 	workersMu.Unlock()
 
 	if !ok {
 		log.Printf("Unable to find worker with Id [%s]", req.ID)
+	} else {
+		log.Printf("Received heartbet for worker: %+v", worker)
 	}
 }
 
@@ -180,8 +182,27 @@ func main() {
 
 	go EmitJobs(ctx)
 
-	log.Printf("HTTP server listening on :8080")
-	if err := http.ListenAndServe(":8080", r); err != nil {
-		log.Fatalf("HTTP server failed: %v", err)
+	server := http.Server{
+		Addr:    ":8080",
+		Handler: r,
 	}
+
+	log.Printf("HTTP server listening on :8080")
+	go func() {
+		if err := server.ListenAndServe(); err != nil {
+			log.Fatalf("HTTP server failed: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Println("Shutdown signal received...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Server shutdown failed: %v", err)
+	}
+
+	log.Print("Server exited gracefully")
 }
