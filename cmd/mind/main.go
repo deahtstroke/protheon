@@ -198,4 +198,7 @@ func main() {
 
 	go startHeartbeat(ctx, fmt.Sprintf("%s:8080", *serverAddr), resp.ID, nil, nil, &start)
 	go DoJobs(ctx, *serverAddr)
+
+	<-ctx.Done()
+	log.Printf("Shutting down worker gracefully")
 }
