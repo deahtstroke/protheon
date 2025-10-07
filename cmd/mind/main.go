@@ -78,7 +78,7 @@ func dialWithRetry(ctx context.Context, url string, attempts int, backoff time.D
 
 func register(serverAddr string) (*api.RegisterResponse, error) {
 	log.Printf("Registering with Conductor mind@[%s]...", serverAddr)
-	registerURL := fmt.Sprintf("%s:8080/mind/register", serverAddr)
+	registerURL := fmt.Sprintf("http://%s:8080/mind/register", serverAddr)
 	hostname, _ := os.Hostname()
 	os := runtime.GOOS
 	registerRequest := api.RegisterRequest{
