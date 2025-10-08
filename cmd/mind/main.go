@@ -32,7 +32,7 @@ func sendHeartbeat(managerURL, workerID string, jobsDone int, lastJob time.Time,
 		Uptime:      time.Since(start).String(),
 	}
 
-	body, _ := json.Marshal(hb)
+	body, err := json.Marshal(hb)
 	resp, err := http.Post(managerURL+"/heartbeat", "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("⚠️ heartbeat failed: %v", err)

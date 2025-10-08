@@ -162,7 +162,6 @@ func EmitJobs(ctx context.Context) {
 					ContentType:  "application/json",
 					Body:         msg,
 				})
-
 			if err != nil {
 				log.Printf("Failed to publish job: %+v: %v", job, err)
 			} else {
