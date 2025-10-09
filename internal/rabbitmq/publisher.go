@@ -13,12 +13,12 @@ type Publisher interface {
 
 type RabbitPublisher struct {
 	url     string
-	queue   *amqp.Queue
-	conn    *amqp.Connection
-	channel *amqp.Channel
+	Queue   *amqp.Queue
+	Conn    *amqp.Connection
+	Channel *amqp.Channel
 }
 
-func NewPublisherCtx(ctx context.Context, url, queueName string) (Publisher, error) {
+func NewPublisherCtx(ctx context.Context, url, queueName string) (*RabbitPublisher, error) {
 	conn, err := dialWithRetry(ctx, amqp.Dial, url, 5, 1*time.Second)
 	if err != nil {
 		return nil, err
@@ -39,18 +39,18 @@ func NewPublisherCtx(ctx context.Context, url, queueName string) (Publisher, err
 
 	return &RabbitPublisher{
 		url:     url,
-		conn:    conn,
-		channel: ch,
-		queue:   &q,
+		Conn:    conn,
+		Channel: ch,
+		Queue:   &q,
 	}, nil
 }
 
 func (p *RabbitPublisher) Publish(ctx context.Context, body []byte) error {
-	if p.channel == nil || p.queue == nil {
+	if p.Channel == nil || p.Queue == nil {
 		return errors.New("Publisher not initialized")
 	}
 
-	return p.channel.PublishWithContext(ctx, "", p.queue.Name, false, false,
+	return p.Channel.PublishWithContext(ctx, "", p.Queue.Name, false, false,
 		amqp.Publishing{
 			ContentType:  "application/json",
 			DeliveryMode: amqp.Persistent,

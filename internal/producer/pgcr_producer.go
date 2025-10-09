@@ -3,10 +3,12 @@ package producer
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 
+	bungie "github.com/deahtstroke/protheon/internal/bungie/types"
 	"github.com/deahtstroke/protheon/internal/rabbitmq"
 	"github.com/klauspost/compress/zstd"
 )
@@ -20,8 +22,15 @@ type Producer interface {
 }
 
 type PgcrProducer struct {
-	Source   string
-	Rabbitmq rabbitmq.Publisher
+	Source    string
+	Publisher rabbitmq.Publisher
+}
+
+func NewPgcrProducer(source string, publisher rabbitmq.Publisher) Producer {
+	return &PgcrProducer{
+		Source:    source,
+		Publisher: publisher,
+	}
 }
 
 func (pp *PgcrProducer) Produce(ctx context.Context) error {
@@ -48,6 +57,17 @@ func (pp *PgcrProducer) Produce(ctx context.Context) error {
 			log.Printf("[Producer] Context cancelled. Finishing producing PGCRs...")
 			return nil
 		default:
+			var pgcr bungie.PGCR
+			err = json.Unmarshal(scanner.Bytes(), &pgcr)
+			if err != nil {
+				return err
+			}
+
+			err = pp.Publisher.Publish(ctx, scanner.Bytes())
+			if err != nil {
+				log.Printf("Error publishing pgcr [%s]: %v", pgcr.ActivityDetails.InstanceID, err)
+				return err
+			}
 		}
 	}
 
