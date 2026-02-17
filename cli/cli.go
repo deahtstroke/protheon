@@ -9,7 +9,7 @@ import (
 	"github.com/containerd/log"
 )
 
-type Cli struct {
+type ProtheonCli struct {
 	events chan tea.Msg
 
 	eventsWg *sync.WaitGroup
@@ -19,8 +19,8 @@ type Cli struct {
 	cleanupFuncs []func(context.Context) error
 }
 
-func NewCli(ctx context.Context) Cli {
-	cli := Cli{
+func NewCli(ctx context.Context) ProtheonCli {
+	cli := ProtheonCli{
 		events:    make(chan tea.Msg, 100),
 		tuiWg:     &sync.WaitGroup{},
 		eventsWg:  &sync.WaitGroup{},
@@ -32,7 +32,7 @@ func NewCli(ctx context.Context) Cli {
 	return cli
 }
 
-func (cli *Cli) setupEvents() {
+func (cli *ProtheonCli) setupEvents() {
 	cleanupFunc := func(context.Context) error {
 		cli.eventsWg.Wait()
 		return nil
@@ -41,7 +41,7 @@ func (cli *Cli) setupEvents() {
 	cli.cleanupFuncs = append(cli.cleanupFuncs, cleanupFunc)
 }
 
-func (cli *Cli) Subscribe(program *tea.Program) {
+func (cli *ProtheonCli) Subscribe(program *tea.Program) {
 	cli.tuiWg.Add(1)
 
 	tuiCtx, tuiCancel := context.WithCancel(cli.globalCtx)
@@ -64,7 +64,7 @@ func (cli *Cli) Subscribe(program *tea.Program) {
 	}
 }
 
-func (cli *Cli) Shutdown() {
+func (cli *ProtheonCli) Shutdown() {
 	start := time.Now()
 	defer func() {
 		log.L.Printf("Shutdown took " + time.Since(start).String())

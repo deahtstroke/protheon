@@ -8,11 +8,11 @@ import (
 	"os"
 
 	"github.com/deahtstroke/protheon/cli"
-	"github.com/deahtstroke/protheon/cmd/commands"
+	"github.com/deahtstroke/protheon/commands"
 	"github.com/spf13/cobra"
 )
 
-func createRootCommand(protheonCLI cli.Cli) *cobra.Command {
+func createRootCommand(protheonCLI cli.ProtheonCli) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "protheon",
 		Short: "Distributed task executor",
