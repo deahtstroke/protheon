@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/deahtstroke/protheon/core/input"
+	"github.com/deahtstroke/protheon/core/transform"
 )
 
 type Executor interface {
@@ -20,6 +21,7 @@ type ExecutorConfig struct {
 
 type ProtheonExecutor struct {
 	input.Decoder
+	transform.Transformer
 }
 
 func NewProtheonExecutor(cfg ExecutorConfig) *ProtheonExecutor {
@@ -34,14 +36,16 @@ func NewProtheonExecutor(cfg ExecutorConfig) *ProtheonExecutor {
 	}
 
 	decoder := input.NewJSONLDecoder(rc)
+	transformer := transform.NewLuaTransformer(cfg.Script)
 	return &ProtheonExecutor{
-		Decoder: decoder,
+		Decoder:     decoder,
+		Transformer: transformer,
 	}
 }
 
 func (e *ProtheonExecutor) Execute() error {
 	for {
-		_, err := e.Decoder.Next()
+		v, err := e.Decoder.Next()
 		if err == io.EOF {
 			break
 		}
@@ -49,8 +53,12 @@ func (e *ProtheonExecutor) Execute() error {
 		if err != nil {
 			return err
 		}
+
+		_, err = e.Transformer.Transform(v)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
-
