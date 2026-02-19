@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/deahtstroke/protheon/core/input"
+	"github.com/deahtstroke/protheon/core/load"
 	"github.com/deahtstroke/protheon/core/transform"
 )
 
@@ -15,6 +16,7 @@ type ExecutorConfig struct {
 	Path       string
 	Compress   string
 	Script     string
+	Format     string
 	Datasource string
 	Table      string
 }
@@ -22,6 +24,7 @@ type ExecutorConfig struct {
 type ProtheonExecutor struct {
 	input.Decoder
 	transform.Transformer
+	load.Loader
 }
 
 func NewProtheonExecutor(cfg ExecutorConfig) *ProtheonExecutor {
@@ -37,9 +40,12 @@ func NewProtheonExecutor(cfg ExecutorConfig) *ProtheonExecutor {
 
 	decoder := input.NewJSONLDecoder(rc)
 	transformer := transform.NewLuaTransformer(cfg.Script)
+
+	loader := load.NewSqlLoader(cfg.Datasource, cfg.Table)
 	return &ProtheonExecutor{
 		Decoder:     decoder,
 		Transformer: transformer,
+		Loader:      loader,
 	}
 }
 
@@ -54,8 +60,12 @@ func (e *ProtheonExecutor) Execute() error {
 			return err
 		}
 
-		_, err = e.Transformer.Transform(v)
+		t, err := e.Transformer.Transform(v)
 		if err != nil {
+			return err
+		}
+
+		if err := e.Loader.Load(t); err != nil {
 			return err
 		}
 	}

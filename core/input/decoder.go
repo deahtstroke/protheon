@@ -2,6 +2,7 @@ package input
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"io"
 )
@@ -28,7 +29,13 @@ func (d *JSONLDecoder) Next() (map[string]any, error) {
 		return nil, err
 	}
 
+	if len(line) == 0 {
+		if err == io.EOF {
+			return nil, io.EOF
+		}
+	}
+
 	var record map[string]any
-	err = json.Unmarshal(line, &record)
+	err = json.Unmarshal(bytes.TrimSpace(line), &record)
 	return record, err
 }

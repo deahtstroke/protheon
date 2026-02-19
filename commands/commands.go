@@ -1,18 +1,13 @@
 package commands
 
-import (
-	"github.com/deahtstroke/protheon/cli"
-	"github.com/spf13/cobra"
-)
+import "github.com/spf13/cobra"
 
-type ProtheonCommand func(cli cli.ProtheonCli) *cobra.Command
+var commands []func() *cobra.Command
 
-var commands []ProtheonCommand
-
-func RegisterCommand(f ProtheonCommand) {
+func RegisterCommand(f func() *cobra.Command) {
 	commands = append(commands, f)
 }
 
-func Commands() []ProtheonCommand {
+func Commands() []func() *cobra.Command {
 	return commands
 }

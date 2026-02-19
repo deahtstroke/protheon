@@ -7,24 +7,21 @@ import (
 	"context"
 	"os"
 
-	"github.com/deahtstroke/protheon/cli"
 	"github.com/deahtstroke/protheon/commands"
 	"github.com/spf13/cobra"
+
+	_ "github.com/deahtstroke/protheon/cmd/run"
 )
 
-func createRootCommand(protheonCLI cli.ProtheonCli) *cobra.Command {
+func createRootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "protheon",
-		Short: "Distributed task executor",
-		Long: `Protheon is a distributed system that allows the user
-			to manage tasks that are running in other hosts`,
-		// Uncomment the following line if your bare application
-		// has an action associated with it:
-		// Run: func(cmd *cobra.Command, args []string) { },
+		Short: "CLI-based ETL application",
+		Long:  `Protheon is an ETL application primarily designed to be used on the terminal`,
 	}
 
 	for _, c := range commands.Commands() {
-		cmd := c(protheonCLI)
+		cmd := c()
 		rootCmd.AddCommand(cmd)
 	}
 
@@ -34,8 +31,7 @@ func createRootCommand(protheonCLI cli.ProtheonCli) *cobra.Command {
 // ProtheonMain adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func ProtheonMain(ctx context.Context) {
-	cli := cli.NewCli(ctx)
-	rCmd := createRootCommand(cli)
+	rCmd := createRootCommand()
 
 	err := rCmd.ExecuteContext(ctx)
 	if err != nil {

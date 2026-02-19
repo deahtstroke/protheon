@@ -20,8 +20,11 @@ func NewLuaTransformer(scriptPath string) *LuaTransformer {
 
 func (t *LuaTransformer) Transform(input any) (any, error) {
 	L := lua.NewState()
+	defer L.Close()
 	lrecord := goToLua(L, input)
+
 	L.SetGlobal("record", lrecord)
+
 	err := L.DoFile(t.Path)
 	if err != nil {
 		return nil, err
