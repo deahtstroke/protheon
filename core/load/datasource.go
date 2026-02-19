@@ -11,43 +11,50 @@ import (
 
 type Loader interface {
 	Load(input any) error
+	Close() error
 }
 
 type SqlLoader struct {
 	URL   string
+	Db    *sql.DB
 	Table string
 }
 
-func NewSqlLoader(url, table string) *SqlLoader {
-	return &SqlLoader{
-		URL:   url,
-		Table: table,
-	}
-}
-
-func (l *SqlLoader) Load(input any) error {
+func NewSqlLoader(url, table string) (*SqlLoader, error) {
 	var db *sql.DB
 	var err error
 
 	switch {
-	case strings.Contains(l.URL, "postgres://"):
-		db, err = sql.Open("postgres", l.URL)
+	case strings.Contains(url, "postgres://"):
+		db, err = sql.Open("postgres", url)
 		if err != nil {
-			return err
+			return nil, err
 		}
-	case strings.Contains(l.URL, "mysql://"):
-		db, err = sql.Open("mysql", l.URL)
+	case strings.Contains(url, "mysql://"):
+		db, err = sql.Open("mysql", url)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
+	return &SqlLoader{
+		URL:   url,
+		Db:    db,
+		Table: table,
+	}, nil
+}
+
+func (s *SqlLoader) Close() error {
+	return s.Db.Close()
+}
+
+func (l *SqlLoader) Load(input any) error {
 	data, ok := input.(map[string]any)
 	if !ok {
 		return fmt.Errorf("Cannot infer the type of the underlying input as `map[string]any`")
 	}
 
-	return InsertAny(db, l.Table, data)
+	return InsertAny(l.Db, l.Table, data)
 }
 
 func InsertAny(db *sql.DB, tableName string, data map[string]any) error {

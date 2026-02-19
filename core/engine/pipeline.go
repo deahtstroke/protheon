@@ -2,54 +2,72 @@ package engine
 
 import (
 	"io"
+	"log"
 
 	"github.com/deahtstroke/protheon/core/input"
 	"github.com/deahtstroke/protheon/core/load"
 	"github.com/deahtstroke/protheon/core/transform"
 )
 
-type Executor interface {
-	Execute() error
+type EngineConfig struct {
+	InputPath       string
+	Compress        string
+	Transformations string
+	Format          string
+	Datasource      string
+	Table           string
 }
 
-type ExecutorConfig struct {
-	Path       string
-	Compress   string
-	Script     string
-	Format     string
-	Datasource string
-	Table      string
-}
-
-type ProtheonExecutor struct {
+type ProtheonEngine struct {
 	input.Decoder
 	transform.Transformer
 	load.Loader
+	CleanupFuncs []func() error
 }
 
-func NewProtheonExecutor(cfg ExecutorConfig) *ProtheonExecutor {
+func NewProtheonEngine(cfg EngineConfig) (*ProtheonEngine, error) {
+	executor := &ProtheonEngine{}
+
 	extractor := input.FileExtractor{
 		Compress: cfg.Compress,
-		Path:     cfg.Path,
+		Path:     cfg.InputPath,
 	}
 
 	rc, err := extractor.Open()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	decoder := input.NewJSONLDecoder(rc)
-	transformer := transform.NewLuaTransformer(cfg.Script)
+	executor.Decoder = decoder
+	executor.CleanupFuncs = append(executor.CleanupFuncs, decoder.Close)
 
-	loader := load.NewSqlLoader(cfg.Datasource, cfg.Table)
-	return &ProtheonExecutor{
-		Decoder:     decoder,
-		Transformer: transformer,
-		Loader:      loader,
+	transformer := transform.NewLuaTransformer(cfg.Transformations)
+	executor.Transformer = transformer
+	executor.CleanupFuncs = append(executor.CleanupFuncs, transformer.Close)
+
+	loader, err := load.NewSqlLoader(cfg.Datasource, cfg.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	executor.Loader = loader
+	executor.CleanupFuncs = append(executor.CleanupFuncs, loader.Close)
+
+	return executor, nil
+}
+
+func (e *ProtheonEngine) Cleanup() {
+	for _, clean := range e.CleanupFuncs {
+		err := clean()
+		if err != nil {
+			log.Printf("There was an error executing a cleanup function: %v", err)
+			continue
+		}
 	}
 }
 
-func (e *ProtheonExecutor) Execute() error {
+func (e *ProtheonEngine) Run() error {
 	for {
 		v, err := e.Decoder.Next()
 		if err == io.EOF {

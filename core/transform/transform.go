@@ -6,32 +6,39 @@ import (
 
 type Transformer interface {
 	Transform(input any) (any, error)
+	Close() error
 }
 
 type LuaTransformer struct {
-	Path string
+	LuaVM *lua.LState
+	Path  string
 }
 
 func NewLuaTransformer(scriptPath string) *LuaTransformer {
+	L := lua.NewState()
 	return &LuaTransformer{
-		Path: scriptPath,
+		Path:  scriptPath,
+		LuaVM: L,
 	}
 }
 
 func (t *LuaTransformer) Transform(input any) (any, error) {
-	L := lua.NewState()
-	defer L.Close()
-	lrecord := goToLua(L, input)
+	lrecord := goToLua(t.LuaVM, input)
 
-	L.SetGlobal("record", lrecord)
+	t.LuaVM.SetGlobal("record", lrecord)
 
-	err := L.DoFile(t.Path)
+	err := t.LuaVM.DoFile(t.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	output := luaToGo(L.GetGlobal("record")).(map[string]any)
+	output := luaToGo(t.LuaVM.GetGlobal("record")).(map[string]any)
 	return output, nil
+}
+
+func (t *LuaTransformer) Close() error {
+	t.LuaVM.Close()
+	return nil
 }
 
 func goToLua(L *lua.LState, data any) lua.LValue {

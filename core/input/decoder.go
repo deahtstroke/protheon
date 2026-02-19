@@ -9,6 +9,7 @@ import (
 
 type Decoder interface {
 	Next() (map[string]any, error)
+	Close() error
 }
 
 type JSONLDecoder struct {
@@ -38,4 +39,8 @@ func (d *JSONLDecoder) Next() (map[string]any, error) {
 	var record map[string]any
 	err = json.Unmarshal(bytes.TrimSpace(line), &record)
 	return record, err
+}
+
+func (d *JSONLDecoder) Close() error {
+	return d.readerCloser.Close()
 }
