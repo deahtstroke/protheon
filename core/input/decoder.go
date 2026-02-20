@@ -30,10 +30,13 @@ func (d *JSONLDecoder) Next() (map[string]any, error) {
 		return nil, err
 	}
 
-	if len(line) == 0 {
+	if len(bytes.TrimSpace(line)) == 0 {
 		if err == io.EOF {
 			return nil, io.EOF
 		}
+
+		// Retur empty struct for empty line
+		return map[string]any{}, nil
 	}
 
 	var record map[string]any
