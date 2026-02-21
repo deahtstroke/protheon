@@ -1,6 +1,8 @@
 package transform
 
 import (
+	"reflect"
+
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -64,6 +66,38 @@ func goToLua(L *lua.LState, data any) lua.LValue {
 		}
 		return lt
 	default:
+		rv := reflect.ValueOf(data)
+
+		if rv.Kind() == reflect.Pointer {
+			if rv.IsNil() {
+				return lua.LNil
+			}
+			rv = rv.Elem()
+		}
+
+		switch rv.Kind() {
+		case reflect.Struct:
+			lt := L.NewTable()
+			rt := rv.Type()
+
+			for i := 0; i < rv.NumField(); i++ {
+				field := rt.Field(i)
+
+				if field.PkgPath != "" {
+					continue
+				}
+
+				lt.RawSetString(field.Name, goToLua(L, rv.Field(i).Interface()))
+			}
+			return lt
+		case reflect.Slice, reflect.Array:
+			lt := L.NewTable()
+			for i := range rv.Len() {
+				lt.Append(goToLua(L, rv.Index(i).Interface()))
+			}
+			return lt
+		}
+
 		return lua.LNil
 	}
 }
