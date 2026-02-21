@@ -25,12 +25,12 @@ func NewSqlLoader(url, table string) (*SqlLoader, error) {
 	var err error
 
 	switch {
-	case strings.Contains(url, "postgres://"):
+	case strings.HasPrefix(url, "postgres://"):
 		db, err = sql.Open("postgres", url)
 		if err != nil {
 			return nil, err
 		}
-	case strings.Contains(url, "mysql://"):
+	case strings.HasPrefix(url, "mysql://"):
 		db, err = sql.Open("mysql", url)
 		if err != nil {
 			return nil, err
@@ -44,8 +44,8 @@ func NewSqlLoader(url, table string) (*SqlLoader, error) {
 	}, nil
 }
 
-func (s *SqlLoader) Close() error {
-	return s.Db.Close()
+func (l *SqlLoader) Close() error {
+	return l.Db.Close()
 }
 
 func (l *SqlLoader) Load(input any) error {
