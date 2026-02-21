@@ -25,7 +25,7 @@ func TestTransform_SuccessSimpleTypes(t *testing.T) {
 	assert.Check(t, m["foo"] == "bar Hello World")
 }
 
-func TestTransform_SuccessStructsAndMaps(t *testing.T) {
+func TestTransform_StructsAndMaps(t *testing.T) {
 	type sum struct {
 		A int
 		B int
@@ -51,7 +51,7 @@ func TestTransform_SuccessStructsAndMaps(t *testing.T) {
 		},
 	}
 
-	transformer := NewLuaTransformer("./testdata/complex_fields.lua")
+	transformer := NewLuaTransformer("./testdata/maps_and_structs.lua")
 	output, err := transformer.Transform(input)
 	if err != nil {
 		t.Fatalf("Error while applying transformations to input: %v", err)
@@ -59,10 +59,46 @@ func TestTransform_SuccessStructsAndMaps(t *testing.T) {
 
 	m, ok := output.(map[string]any)
 	if !ok {
-		t.Fatalf("Unable to parse the output as a generic map")
+		t.Fatal("Unable to parse the output as a generic map")
 	}
 
 	assert.Check(t, m["sum"] == float64(15))
 	assert.Check(t, m["hello world"] == "hello world!")
 	assert.Check(t, m["total"] == float64(16))
+}
+
+func TestTransform_StructsWithSlices(t *testing.T) {
+	type sum struct {
+		A int
+		B int
+	}
+
+	type arithmetic struct {
+		First  sum
+		Second sum
+	}
+
+	input := arithmetic{
+		First: sum{
+			A: 5,
+			B: 5,
+		},
+		Second: sum{
+			A: 10,
+			B: 10,
+		},
+	}
+
+	transformer := NewLuaTransformer("./testdata/struct_with_structs.lua")
+	output, err := transformer.Transform(input)
+	if err != nil {
+		t.Fatalf("Error while applying transformation to input: %v", err)
+	}
+
+	m, ok := output.(map[string]any)
+	if !ok {
+		t.Fatalf("Unable to parse the output as a generic map")
+	}
+
+	assert.Check(t, m["total"] == float64(30))
 }
