@@ -1,6 +1,8 @@
 package input
 
 import (
+	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 
@@ -13,12 +15,39 @@ type Extractor interface {
 
 type FileExtractor struct {
 	Path     string
-	Compress string
+	Compress Compress
 }
 
 type combinedCloser struct {
-	r io.Reader
-	z io.Closer
+	Reader io.Reader
+	Closer io.Closer
+}
+
+type Compress int
+
+const (
+	Zstd Compress = iota
+	Gzip
+)
+
+type FileExtractorOpt func(*FileExtractor)
+
+func NewFileExtractor(filePath string, opts ...FileExtractorOpt) (*FileExtractor, error) {
+	fe := &FileExtractor{
+		Path: filePath,
+	}
+
+	if _, err := os.Stat(filePath); err != nil && os.IsNotExist(err) {
+		return nil, fmt.Errorf("Resource with path %s does not exist", filePath)
+	}
+
+	for _, opt := range opts {
+		if opt != nil {
+			opt(fe)
+		}
+	}
+
+	return fe, nil
 }
 
 func (e *FileExtractor) Open() (io.ReadCloser, error) {
@@ -28,22 +57,42 @@ func (e *FileExtractor) Open() (io.ReadCloser, error) {
 	}
 
 	var r io.Reader = file
-	if e.Compress == "zstd" {
+
+	switch e.Compress {
+	case Zstd:
 		r, err = zstd.NewReader(r)
 		if err != nil {
 			return nil, err
 		}
-
-		return &combinedCloser{r: r, z: file}, nil
+		return &combinedCloser{Reader: r, Closer: file}, nil
+	case Gzip:
+		r, err = gzip.NewReader(r)
+		if err != nil {
+			return nil, err
+		}
+		return &combinedCloser{Reader: r, Closer: file}, nil
+	default:
 	}
 
 	return file, nil
 }
 
 func (c *combinedCloser) Read(p []byte) (int, error) {
-	return c.r.Read(p)
+	return c.Reader.Read(p)
 }
 
 func (c *combinedCloser) Close() error {
-	return c.z.Close()
+	return c.Closer.Close()
+}
+
+func WithGzip() FileExtractorOpt {
+	return func(fe *FileExtractor) {
+		fe.Compress = Gzip
+	}
+}
+
+func WithZstd() FileExtractorOpt {
+	return func(fe *FileExtractor) {
+		fe.Compress = Zstd
+	}
 }

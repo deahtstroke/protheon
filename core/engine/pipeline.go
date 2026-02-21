@@ -28,10 +28,15 @@ type ProtheonEngine struct {
 func NewProtheonEngine(cfg EngineConfig) (*ProtheonEngine, error) {
 	executor := &ProtheonEngine{}
 
-	extractor := input.FileExtractor{
-		Compress: cfg.Compress,
-		Path:     cfg.InputPath,
+	opts := []input.FileExtractorOpt{}
+	switch cfg.Compress {
+	case "zstd":
+		opts = append(opts, input.WithZstd())
+	case "gzip":
+		opts = append(opts, input.WithGzip())
 	}
+
+	extractor, err := input.NewFileExtractor(cfg.InputPath, opts...)
 
 	rc, err := extractor.Open()
 	if err != nil {

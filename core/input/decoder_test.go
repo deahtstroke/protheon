@@ -98,3 +98,15 @@ func TestNext_NoErrorOnNewLinesOrEmptyLines(t *testing.T) {
 		})
 	}
 }
+
+func Test_CloseMightErrorOut(t *testing.T) {
+	mockReadCloser := mockReadCloser{
+		shouldErr: true,
+	}
+	decoder := NewJSONLDecoder(&mockReadCloser)
+	err := decoder.Close()
+
+	if err == nil {
+		t.Fatal("Expecting error, found none")
+	}
+}
