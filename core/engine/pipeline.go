@@ -9,13 +9,21 @@ import (
 	"github.com/deahtstroke/protheon/core/transform"
 )
 
-type EngineConfig struct {
-	InputPath       string
-	Compress        string
-	Transformations string
-	Format          string
-	Datasource      string
-	Table           string
+type ETLConfig struct {
+	Input           Input      `toml:"input" yaml:"input"`
+	Transformations string     `toml:"transformations" yaml:"transformations"`
+	Datasource      Datasource `toml:"datasource" yaml:"datasource"`
+}
+
+type Input struct {
+	Path      string `toml:"path" yaml:"path"`
+	Extension string `toml:"extension" yaml:"extension"`
+	Compress  string `toml:"compress" yaml:"compress"`
+}
+
+type Datasource struct {
+	URL   string `toml:"url" yaml:"url"`
+	Table string `toml:"table" yaml:"table"`
 }
 
 type ProtheonEngine struct {
@@ -25,41 +33,9 @@ type ProtheonEngine struct {
 	CleanupFuncs []func() error
 }
 
-func NewProtheonEngine(cfg EngineConfig) (*ProtheonEngine, error) {
-	executor := &ProtheonEngine{}
-
-	opts := []input.FileExtractorOpt{}
-	switch cfg.Compress {
-	case "zstd":
-		opts = append(opts, input.WithZstd())
-	case "gzip":
-		opts = append(opts, input.WithGzip())
-	}
-
-	extractor, err := input.NewFileExtractor(cfg.InputPath, opts...)
-
-	rc, err := extractor.Open()
-	if err != nil {
-		return nil, err
-	}
-
-	decoder := input.NewJSONLDecoder(rc)
-	executor.Decoder = decoder
-	executor.CleanupFuncs = append(executor.CleanupFuncs, decoder.Close)
-
-	transformer := transform.NewLuaTransformer(cfg.Transformations)
-	executor.Transformer = transformer
-	executor.CleanupFuncs = append(executor.CleanupFuncs, transformer.Close)
-
-	loader, err := load.NewSqlLoader(cfg.Datasource, cfg.Table)
-	if err != nil {
-		return nil, err
-	}
-
-	executor.Loader = loader
-	executor.CleanupFuncs = append(executor.CleanupFuncs, loader.Close)
-
-	return executor, nil
+func NewEngine() (*ProtheonEngine, error) {
+	e := &ProtheonEngine{}
+	return e, nil
 }
 
 func (e *ProtheonEngine) Cleanup() {
@@ -72,7 +48,41 @@ func (e *ProtheonEngine) Cleanup() {
 	}
 }
 
-func (e *ProtheonEngine) Run() error {
+func (e *ProtheonEngine) Run(cfg ETLConfig) error {
+	opts := []input.FileExtractorOpt{}
+
+	switch cfg.Input.Compress {
+	case "zstd":
+		opts = append(opts, input.WithZstd())
+	case "gzip":
+		opts = append(opts, input.WithGzip())
+	default:
+	}
+
+	extractor, err := input.NewFileExtractor(cfg.Input.Path, opts...)
+	if err != nil {
+		return err
+	}
+
+	rc, err := extractor.Open()
+	if err != nil {
+		return err
+	}
+
+	decoder := input.NewJSONLDecoder(rc)
+	e.Decoder = decoder
+	e.CleanupFuncs = append(e.CleanupFuncs, decoder.Close)
+
+	transformer := transform.NewLuaTransformer(cfg.Transformations)
+	e.Transformer = transformer
+	e.CleanupFuncs = append(e.CleanupFuncs, transformer.Close)
+	loader, err := load.NewSqlLoader(cfg.Datasource.URL, cfg.Datasource.Table)
+	if err != nil {
+		return err
+	}
+	e.Loader = loader
+	e.CleanupFuncs = append(e.CleanupFuncs, loader.Close)
+
 	for {
 		v, err := e.Decoder.Next()
 		if err == io.EOF {

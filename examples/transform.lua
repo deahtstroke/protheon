@@ -10,5 +10,6 @@ end
 if record.firstName == "Daniel" then
 	record.name = "Danieasllllll" .. " Peluche " .. record.lastName
 end
+
 record.firstName = nil
 record.lastName = nil

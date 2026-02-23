@@ -1,0 +1,9 @@
+transformations = "./transform.lua"
+
+[input]
+path = "./users.jsonl"
+extension = "jsonl"
+
+[datasource]
+url = "postgres://user:password@localhost:5432/mydb?sslmode=disable"
+table = "user"

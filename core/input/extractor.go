@@ -26,7 +26,8 @@ type combinedCloser struct {
 type Compress int
 
 const (
-	Zstd Compress = iota
+	None Compress = iota
+	Zstd
 	Gzip
 )
 
@@ -72,9 +73,8 @@ func (e *FileExtractor) Open() (io.ReadCloser, error) {
 		}
 		return &combinedCloser{Reader: r, Closer: file}, nil
 	default:
+		return file, nil
 	}
-
-	return file, nil
 }
 
 func (c *combinedCloser) Read(p []byte) (int, error) {
