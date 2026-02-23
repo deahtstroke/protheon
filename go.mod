@@ -15,7 +15,9 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.18.4
 	github.com/lib/pq v1.11.2
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/yuin/gopher-lua v1.1.1
+	go.yaml.in/yaml/v4 v4.0.0-rc.4
 	gotest.tools/v3 v3.5.2
 )
