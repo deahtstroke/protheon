@@ -10,6 +10,7 @@ import (
 	"github.com/deahtstroke/protheon/commands"
 	"github.com/spf13/cobra"
 
+	_ "github.com/deahtstroke/protheon/cmd/config"
 	_ "github.com/deahtstroke/protheon/cmd/run"
 )
 
