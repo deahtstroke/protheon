@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Init() {
+func init() {
 	commands.RegisterCommand(newConfigCommand)
 }
 
@@ -17,5 +17,6 @@ func newConfigCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 	}
 
+	cmd.AddCommand(NewCreateConfigCommand())
 	return cmd
 }

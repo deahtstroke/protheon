@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"errors"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/deahtstroke/protheon/core/input"
 	"github.com/deahtstroke/protheon/core/load"
@@ -101,6 +103,44 @@ func (e *ProtheonEngine) Run(cfg ETLConfig) error {
 		if err := e.Loader.Load(t); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// Validates the minimum required fields for a proper ETL pipeline run
+// Note: This method only tests whether the fields are present, if the
+// value itself is not a valid or is poorly formatted then this method
+// won't catch it
+func VerifyFields(cfg *ETLConfig) error {
+	errs := []string{}
+	if cfg.Input.Path == "" {
+		errs = append(errs, "Input path not provided")
+	}
+
+	if cfg.Input.Extension == "" {
+		errs = append(errs, "Input extension not provided")
+	}
+
+	if cfg.Transformations == "" {
+		errs = append(errs, "Transformations not provided or empty")
+	}
+
+	if cfg.Datasource.URL == "" {
+		errs = append(errs, "Datasource URL is not defined")
+	}
+	if cfg.Datasource.Table == "" {
+		errs = append(errs, "Datasource destination table is not defined")
+	}
+
+	if len(errs) > 0 {
+		var builder strings.Builder
+		builder.WriteString("There were several errors when validating the config file: \n")
+		for _, msg := range errs {
+			builder.WriteString("\n • " + msg)
+		}
+
+		return errors.New(builder.String())
 	}
 
 	return nil
