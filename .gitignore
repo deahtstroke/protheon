@@ -36,3 +36,6 @@ bin/
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Crush
+.crush
