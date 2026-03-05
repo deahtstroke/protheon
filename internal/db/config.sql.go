@@ -55,3 +55,28 @@ func (r *Repository) ExistsByAlias(ctx context.Context, args ExistsByAliasParams
 
 	return exists, err
 }
+
+const getAllConfis = `
+ SELECT id, alias, created_at
+ FROM config c
+`
+
+func (r *Repository) GetAllConfigs(ctx context.Context) ([]Config, error) {
+	rows, err := r.db.QueryContext(ctx, getAllConfis)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var res []Config
+	for rows.Next() {
+		var config Config
+		if err := rows.Scan(&config.Id, &config.Alias, &config.CreatedAt); err != nil {
+			return nil, err
+		}
+		res = append(res, config)
+	}
+
+	return res, rows.Err()
+}
