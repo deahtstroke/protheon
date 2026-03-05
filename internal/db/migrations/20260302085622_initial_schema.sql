@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS config (
     id text PRIMARY KEY,
     path text NOT NULL,
-    alias text,
+    alias text UNIQUE,
     created_at integer NOT NULL DEFAULT (strftime ('%s', 'now')),
     updated_at integer
 );

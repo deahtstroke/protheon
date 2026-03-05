@@ -6,9 +6,9 @@ import (
 	"log"
 	"strings"
 
-	"github.com/deahtstroke/protheon/core/input"
-	"github.com/deahtstroke/protheon/core/load"
-	"github.com/deahtstroke/protheon/core/transform"
+	"github.com/deahtstroke/protheon/internal/core/input"
+	"github.com/deahtstroke/protheon/internal/core/load"
+	"github.com/deahtstroke/protheon/internal/core/transform"
 )
 
 type ETLConfig struct {

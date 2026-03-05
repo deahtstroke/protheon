@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/deahtstroke/protheon/core/engine"
+	"github.com/deahtstroke/protheon/internal/core/engine"
 )
 
 func InitializeConfig(id, editor string, format ConfigFormat) (string, error) {
