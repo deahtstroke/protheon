@@ -5,16 +5,20 @@ package cmd
 
 import (
 	"context"
+	"log"
 	"os"
 
-	"github.com/deahtstroke/protheon/commands"
+	"github.com/deahtstroke/protheon/cmd/commands"
+	"github.com/deahtstroke/protheon/internal/app"
+	"github.com/deahtstroke/protheon/internal/config"
+	"github.com/deahtstroke/protheon/internal/db"
 	"github.com/spf13/cobra"
 
 	_ "github.com/deahtstroke/protheon/cmd/config"
 	_ "github.com/deahtstroke/protheon/cmd/run"
 )
 
-func createRootCommand() *cobra.Command {
+func createRootCommand(cli *app.ProtheonCLI) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "protheon",
 		Short: "CLI-based ETL application",
@@ -22,7 +26,7 @@ func createRootCommand() *cobra.Command {
 	}
 
 	for _, c := range commands.Commands() {
-		cmd := c()
+		cmd := c(cli)
 		rootCmd.AddCommand(cmd)
 	}
 
@@ -32,9 +36,18 @@ func createRootCommand() *cobra.Command {
 // ProtheonMain adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func ProtheonMain(ctx context.Context) {
-	rCmd := createRootCommand()
+	db, err := db.Connect(config.GlobalDatabaseUrl())
+	if err != nil {
+		log.Fatalf("Unable to connect to DB: %v", err)
+	}
 
-	err := rCmd.ExecuteContext(ctx)
+	cli, err := app.New(ctx, db, false)
+	if err != nil {
+		log.Fatalf("Error while creating CLI: %s", err)
+	}
+
+	rCmd := createRootCommand(cli)
+	err = rCmd.ExecuteContext(ctx)
 	if err != nil {
 		os.Exit(1)
 	}

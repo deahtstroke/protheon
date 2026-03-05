@@ -7,14 +7,16 @@ import (
 
 const (
 	appName   = "protheon"
+	dbName    = "protheon.db"
 	configDir = "config"
 )
 
-func GlobalDbDir() string {
+func GlobalDatabaseUrl() string {
 	dataHomeDir := os.Getenv("XDG_DATA_HOME")
 	if dataHomeDir == "" {
 		homeDir, _ := os.UserHomeDir()
-		return filepath.Join(homeDir, ".local/share", appName)
+		path := filepath.Join(homeDir, ".local/share", appName, dbName)
+		return "file:" + path
 	}
 	return filepath.Join(dataHomeDir, appName)
 }

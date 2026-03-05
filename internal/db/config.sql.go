@@ -1,6 +1,9 @@
 package db
 
-import "context"
+import (
+	"context"
+	"github.com/deahtstroke/protheon/internal/errors"
+)
 
 const createConfg = `
 INSERT INTO config (
@@ -79,4 +82,39 @@ func (r *Repository) GetAllConfigs(ctx context.Context) ([]Config, error) {
 	}
 
 	return res, rows.Err()
+}
+
+const getConfigPathByIdOrAlias = `
+	SELECT c.path
+	FROM config c
+	WHERE c.id = ? OR c.alias = ?
+`
+
+func (r *Repository) GetConfigPathByAliasOrId(ctx context.Context, identifier string) (string, error) {
+	var path string
+	row := r.db.QueryRowContext(ctx, getConfigPathByIdOrAlias, identifier, identifier)
+	err := row.Scan(&path)
+	return path, err
+}
+
+const deleteByIdOrAlias = `
+	DELETE FROM config WHERE id = ? OR alias = ?
+`
+
+func (r *Repository) DeleteByIdOrAlias(ctx context.Context, idOrAlias string) error {
+	result, err := r.db.ExecContext(ctx, deleteByIdOrAlias, idOrAlias, idOrAlias)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return &protheonErrors.NotFoundError{Identifier: idOrAlias}
+	}
+
+	return nil
 }

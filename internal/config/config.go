@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/deahtstroke/protheon/core/engine"
+	"github.com/deahtstroke/protheon/internal/core/engine"
 )
 
 // ConfigFormat uses the strategy design pattern

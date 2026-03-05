@@ -1,7 +1,8 @@
 package config
 
 import (
-	"github.com/deahtstroke/protheon/commands"
+	"github.com/deahtstroke/protheon/cmd/commands"
+	"github.com/deahtstroke/protheon/internal/app"
 	"github.com/spf13/cobra"
 )
 
@@ -9,7 +10,7 @@ func init() {
 	commands.RegisterCommand(newConfigCommand)
 }
 
-func newConfigCommand() *cobra.Command {
+func newConfigCommand(cli *app.ProtheonCLI) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config COMMAND",
 		Short: "Manage saved Protheon ETL configs",
@@ -17,7 +18,8 @@ func newConfigCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(0),
 	}
 
-	cmd.AddCommand(NewCreateConfigCommand())
-	cmd.AddCommand(NewConfigListCommand())
+	cmd.AddCommand(NewCreateConfigCommand(cli))
+	cmd.AddCommand(NewConfigListCommand(cli))
+	cmd.AddCommand(NewConfigDeleteCommand(cli))
 	return cmd
 }

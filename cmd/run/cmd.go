@@ -5,8 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/deahtstroke/protheon/commands"
-	"github.com/deahtstroke/protheon/core/engine"
+	"github.com/deahtstroke/protheon/cmd/commands"
+	"github.com/deahtstroke/protheon/internal/app"
+	"github.com/deahtstroke/protheon/internal/core/engine"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v4"
@@ -26,7 +27,7 @@ const (
 	configFileFlag      string = "config-file"
 )
 
-func newRunCommand() *cobra.Command {
+func newRunCommand(cli *app.ProtheonCLI) *cobra.Command {
 	var config engine.ETLConfig
 	var configPath string
 

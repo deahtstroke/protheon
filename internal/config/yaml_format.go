@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/deahtstroke/protheon/core/engine"
+	"github.com/deahtstroke/protheon/internal/core/engine"
 	"go.yaml.in/yaml/v4"
 )
 

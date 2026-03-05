@@ -13,10 +13,12 @@ import (
 	"time"
 
 	"github.com/deahtstroke/protheon/internal/db"
+	protheonErrors "github.com/deahtstroke/protheon/internal/errors"
 )
 
 type Service interface {
-	CreateConfig(context.Context, string, string) (*db.Config, error)
+	CreateConfig(context.Context, string, string) error
+	DeleteConfigs(context.Context, []string) error
 	ListConfigs(context.Context) error
 }
 
@@ -51,37 +53,80 @@ func (s *ConfigService) ListConfigs(ctx context.Context) error {
 	return nil
 }
 
-func (s *ConfigService) CreateConfig(ctx context.Context, format, alias string) (*db.Config, error) {
+func (s *ConfigService) CreateConfig(ctx context.Context, format, alias string) error {
 	aliasExists, err := s.Repository.ExistsByAlias(ctx, db.ExistsByAliasParams{Alias: alias})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if aliasExists {
-		return nil, errors.New("Already existing configuration with the given alias")
+		return errors.New("Already existing configuration with the given alias")
 	}
 
 	formatConfig, err := ResolveConfig(format)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	configId, err := GenerateId(16)
 	if err != nil {
-		return nil, fmt.Errorf("Error generating config ID: %s", err)
+		return fmt.Errorf("Error generating config ID: %s", err)
 	}
 
 	path, err := InitializeConfig(configId, getUserPreferredEditor(), formatConfig)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	entity, err := s.Repository.CreateConfig(ctx, db.CreateConfigParams{Id: configId, Alias: alias, Path: path})
 	if err != nil {
-		return nil, fmt.Errorf("Error creating config: %s", err)
+		return fmt.Errorf("Error creating config: %s", err)
 	}
 
-	return &entity, nil
+	if entity.Alias != "" {
+		fmt.Println(entity.Alias)
+	} else {
+		fmt.Println(entity.Id)
+	}
+
+	return nil
+}
+
+func (s *ConfigService) DeleteConfigs(ctx context.Context, configIds []string) error {
+	var idsNotFound []string
+
+	for _, id := range configIds {
+		path, err := s.Repository.GetConfigPathByAliasOrId(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if err = os.Remove(path); err != nil {
+			return err
+		}
+
+		err = s.Repository.DeleteByIdOrAlias(ctx, fmt.Sprint(id))
+		if err == nil {
+			fmt.Println(id)
+		}
+
+		var notFound *protheonErrors.NotFoundError
+		if errors.As(err, &notFound) {
+			idsNotFound = append(idsNotFound, notFound.Identifier)
+			continue
+		}
+
+		return err
+	}
+
+	if len(idsNotFound) > 0 {
+		fmt.Fprintf(os.Stderr, "\nNo config found for the following identifiers:\n\n")
+		for _, id := range idsNotFound {
+			fmt.Fprintf(os.Stderr, "	- %s\n", id)
+		}
+	}
+
+	return nil
 }
 
 func getUserPreferredEditor() string {
