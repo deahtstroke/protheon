@@ -41,6 +41,8 @@ func ProtheonMain(ctx context.Context) {
 		log.Fatalf("Unable to connect to DB: %v", err)
 	}
 
+	defer db.Close()
+
 	cli, err := app.New(ctx, db, false)
 	if err != nil {
 		log.Fatalf("Error while creating CLI: %s", err)

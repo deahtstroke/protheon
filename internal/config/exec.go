@@ -12,7 +12,12 @@ import (
 func InitializeConfig(id, editor string, format ConfigFormat) (string, error) {
 	editor = getUserPreferredEditor()
 
-	tempFile, err := os.CreateTemp("", format.TempPattern())
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	tempFile, err := os.CreateTemp(cwd, format.TempPattern())
 	if err != nil {
 		return "", fmt.Errorf("Error creating a temporary file: %v", err)
 	}
