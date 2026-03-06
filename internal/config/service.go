@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -20,6 +21,7 @@ type Service interface {
 	CreateConfig(context.Context, string, string) error
 	DeleteConfigs(context.Context, []string) error
 	ListConfigs(context.Context) error
+	EditConfig(context.Context, string, []string) error
 }
 
 type ConfigService struct {
@@ -124,6 +126,25 @@ func (s *ConfigService) DeleteConfigs(ctx context.Context, configIds []string) e
 		for _, id := range idsNotFound {
 			fmt.Fprintf(os.Stderr, "	- %s\n", id)
 		}
+	}
+
+	return nil
+}
+
+func (s *ConfigService) EditConfig(ctx context.Context, identifier string, keyValues []string) error {
+	path, err := s.Repository.GetConfigPathByAliasOrId(ctx, identifier)
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("No matching config for %s", identifier)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if len(keyValues) > 0 {
+		return MutateYaml(path, keyValues)
+	} else {
+
 	}
 
 	return nil

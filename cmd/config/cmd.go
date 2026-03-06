@@ -19,7 +19,8 @@ func newConfigCommand(cli *app.ProtheonCLI) *cobra.Command {
 	}
 
 	cmd.AddCommand(NewCreateConfigCommand(cli))
-	cmd.AddCommand(NewConfigListCommand(cli))
-	cmd.AddCommand(NewConfigDeleteCommand(cli))
+	cmd.AddCommand(NewListConfigCommand(cli))
+	cmd.AddCommand(NewDeleteConfigCommand(cli))
+	cmd.AddCommand(NewEditConfigCommand(cli))
 	return cmd
 }
