@@ -15,7 +15,7 @@ func (f *YamlFormat) GetTemplate() string {
 	return yamlTemplate
 }
 
-func (f *YamlFormat) RetrieveETLConfig(b []byte) (*engine.ETLConfig, error) {
+func (f *YamlFormat) ToETLConfig(b []byte) (*engine.ETLConfig, error) {
 	var cfg engine.ETLConfig
 	if err := yaml.Unmarshal(b, &cfg); err != nil {
 		return nil, err

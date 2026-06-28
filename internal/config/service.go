@@ -8,20 +8,60 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
-	"strings"
-	"text/tabwriter"
-	"time"
 
 	"github.com/deahtstroke/protheon/internal/db"
 	protheonErrors "github.com/deahtstroke/protheon/internal/errors"
 )
 
+type EditConfigurationOptions struct {
+	TransformationPath string
+	Input              *ConfigurationInput
+	Datasource         *ConfigurationDatasource
+}
+
+type ConfigurationInput struct {
+	Path      string
+	Extension string
+}
+
+type ConfigurationDatasource struct {
+	Url   string
+	Table string
+}
+
+func (o EditConfigurationOptions) ToKeyValues() map[string]any {
+	var kvs map[string]any = make(map[string]any)
+
+	if o.Datasource.Table != "" {
+		kvs["datasource.table"] = o.Datasource.Table
+	}
+
+	if o.Datasource.Url != "" {
+		kvs["datasource.url"] = o.Datasource.Url
+	}
+
+	if o.Input.Extension != "" {
+		kvs["input.extension"] = o.Input.Extension
+	}
+
+	if o.Input.Path != "" {
+		kvs["input.path"] = o.Input.Path
+	}
+
+	if o.TransformationPath != "" {
+		kvs["transformations"] = o.TransformationPath
+	}
+
+	return kvs
+}
+
 type Service interface {
 	CreateConfig(context.Context, string, string) error
 	DeleteConfigs(context.Context, []string) error
-	ListConfigs(context.Context) error
-	EditConfig(context.Context, string, []string) error
+	ListConfigs(context.Context) ([]db.Config, error)
+	EditConfig(context.Context, string, EditConfigurationOptions) error
 }
 
 type ConfigService struct {
@@ -34,25 +74,12 @@ func NewService(repo *db.Repository) Service {
 	}
 }
 
-func (s *ConfigService) ListConfigs(ctx context.Context) error {
+func (s *ConfigService) ListConfigs(ctx context.Context) ([]db.Config, error) {
 	configs, err := s.Repository.GetAllConfigs(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	headers := []string{"CONFIG ID", "ALIAS", "CREATED AT"}
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', 0)
-	defer w.Flush()
-
-	header := strings.Join(headers, "\t")
-	fmt.Fprintln(w, header)
-
-	for _, config := range configs {
-		t := time.Unix(config.CreatedAt, 0)
-		fmt.Fprintf(w, "%s\t%s\t%s\n", config.Id, config.Alias, t.Format(time.RFC1123))
-	}
-
-	return nil
+	return configs, nil
 }
 
 func (s *ConfigService) CreateConfig(ctx context.Context, format, alias string) error {
@@ -65,7 +92,7 @@ func (s *ConfigService) CreateConfig(ctx context.Context, format, alias string) 
 		return errors.New("Already existing configuration with the given alias")
 	}
 
-	formatConfig, err := ResolveConfig(format)
+	formatConfig, err := ResolveFormat(format)
 	if err != nil {
 		return err
 	}
@@ -75,7 +102,7 @@ func (s *ConfigService) CreateConfig(ctx context.Context, format, alias string) 
 		return fmt.Errorf("Error generating config ID: %s", err)
 	}
 
-	path, err := InitializeConfig(configId, getUserPreferredEditor(), formatConfig)
+	path, err := InitializeConfig(configId, formatConfig)
 	if err != nil {
 		return err
 	}
@@ -98,12 +125,12 @@ func (s *ConfigService) DeleteConfigs(ctx context.Context, configIds []string) e
 	var idsNotFound []string
 
 	for _, id := range configIds {
-		path, err := s.Repository.GetConfigPathByAliasOrId(ctx, id)
+		config, err := s.Repository.GetConfigPathByAliasOrId(ctx, id)
 		if err != nil {
 			return err
 		}
 
-		if err = os.Remove(path); err != nil {
+		if err = os.Remove(config.Path); err != nil {
 			return err
 		}
 
@@ -131,22 +158,37 @@ func (s *ConfigService) DeleteConfigs(ctx context.Context, configIds []string) e
 	return nil
 }
 
-func (s *ConfigService) EditConfig(ctx context.Context, identifier string, keyValues []string) error {
-	path, err := s.Repository.GetConfigPathByAliasOrId(ctx, identifier)
+func (s *ConfigService) EditConfig(ctx context.Context, id string, opts EditConfigurationOptions) error {
+	config, err := s.Repository.GetConfigPathByAliasOrId(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
-		return fmt.Errorf("No matching config for %s", identifier)
+		return fmt.Errorf("No matching config with Id/Alias %s", id)
 	}
 
 	if err != nil {
 		return err
 	}
 
-	if len(keyValues) > 0 {
-		return MutateYaml(path, keyValues)
-	} else {
-
+	if kvs := opts.ToKeyValues(); len(kvs) > 0 {
+		extension := filepath.Ext(config.Path)
+		switch extension {
+		case ".toml":
+			if err := MutateToml(config.Path, kvs); err != nil {
+				return err
+			}
+		case ".yaml", ".yml":
+			if err := MutateYaml(config.Path, kvs); err != nil {
+				return err
+			}
+		}
+	} else if err := EditConfig(config.Path); err != nil {
+		return err
 	}
 
+	if config.Alias != "" {
+		fmt.Print(config.Alias)
+	} else {
+		fmt.Print(config.Id)
+	}
 	return nil
 }
 
