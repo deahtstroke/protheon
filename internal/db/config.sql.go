@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+
 	"github.com/deahtstroke/protheon/internal/errors"
 )
 
@@ -84,17 +85,17 @@ func (r *Repository) GetAllConfigs(ctx context.Context) ([]Config, error) {
 	return res, rows.Err()
 }
 
-const getConfigPathByIdOrAlias = `
-	SELECT c.path
+const getConfigByIdOrAlias = `
+	SELECT c.id, c.path, c.alias, c.created_at
 	FROM config c
 	WHERE c.id = ? OR c.alias = ?
 `
 
-func (r *Repository) GetConfigPathByAliasOrId(ctx context.Context, identifier string) (string, error) {
-	var path string
-	row := r.db.QueryRowContext(ctx, getConfigPathByIdOrAlias, identifier, identifier)
-	err := row.Scan(&path)
-	return path, err
+func (r *Repository) GetConfigPathByAliasOrId(ctx context.Context, identifier string) (Config, error) {
+	var config Config
+	row := r.db.QueryRowContext(ctx, getConfigByIdOrAlias, identifier, identifier)
+	err := row.Scan(&config.Id, &config.Path, &config.Alias, &config.CreatedAt)
+	return config, err
 }
 
 const deleteByIdOrAlias = `

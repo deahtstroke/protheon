@@ -1,6 +1,6 @@
 module github.com/deahtstroke/protheon
 
-go 1.25.0
+go 1.25.3
 
 require github.com/spf13/cobra v1.10.2
 
@@ -25,6 +25,7 @@ require (
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/deahtstroke/tast v0.4.1
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/compress v1.18.4
