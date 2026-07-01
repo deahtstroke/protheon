@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewDeleteConfigCommand(cli *app.ProtheonCLI) *cobra.Command {
+func NewDeleteConfigCommand(cli *app.Protheon) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete [ARGS]",
 		Short: "Delete Protheon ETL configurations",

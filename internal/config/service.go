@@ -58,6 +58,7 @@ func (o EditConfigurationOptions) ToKeyValues() map[string]any {
 }
 
 type Service interface {
+	GetConfigByAliasOrId(context.Context, string) (db.Config, error)
 	CreateConfig(context.Context, string, string) error
 	DeleteConfigs(context.Context, []string) error
 	ListConfigs(context.Context) ([]db.Config, error)
@@ -72,6 +73,10 @@ func NewService(repo *db.Repository) Service {
 	return &ConfigService{
 		Repository: repo,
 	}
+}
+
+func (s *ConfigService) GetConfigByAliasOrId(ctx context.Context, idOrAlias string) (db.Config, error) {
+	return s.Repository.GetConfigByAliasOrId(ctx, idOrAlias)
 }
 
 func (s *ConfigService) ListConfigs(ctx context.Context) ([]db.Config, error) {
@@ -125,7 +130,7 @@ func (s *ConfigService) DeleteConfigs(ctx context.Context, configIds []string) e
 	var idsNotFound []string
 
 	for _, id := range configIds {
-		config, err := s.Repository.GetConfigPathByAliasOrId(ctx, id)
+		config, err := s.Repository.GetConfigByAliasOrId(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -159,7 +164,7 @@ func (s *ConfigService) DeleteConfigs(ctx context.Context, configIds []string) e
 }
 
 func (s *ConfigService) EditConfig(ctx context.Context, id string, opts EditConfigurationOptions) error {
-	config, err := s.Repository.GetConfigPathByAliasOrId(ctx, id)
+	config, err := s.Repository.GetConfigByAliasOrId(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("No matching config with Id/Alias %s", id)
 	}

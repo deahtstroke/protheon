@@ -15,8 +15,8 @@ func (f *TomlFormat) GetTemplate() string {
 	return tomlTemplate
 }
 
-func (f *TomlFormat) ToETLConfig(b []byte) (*engine.ETLConfig, error) {
-	var cfg engine.ETLConfig
+func (f *TomlFormat) ToETLConfig(b []byte) (*engine.RunOpts, error) {
+	var cfg engine.RunOpts
 	if err := toml.Unmarshal(b, &cfg); err != nil {
 		return nil, err
 	}

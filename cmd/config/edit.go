@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewEditConfigCommand(cli *app.ProtheonCLI) *cobra.Command {
+func NewEditConfigCommand(cli *app.Protheon) *cobra.Command {
 	opts := EditOpts{}
 
 	cmd := &cobra.Command{
@@ -34,7 +34,7 @@ then the user's editor will open the file for interactive editing instead`,
 	return cmd
 }
 
-func runEditConfig(cli *app.ProtheonCLI, id string, opts EditOpts) error {
+func runEditConfig(cli *app.Protheon, id string, opts EditOpts) error {
 	editOpts := config.EditConfigurationOptions{
 		Input:      &config.ConfigurationInput{},
 		Datasource: &config.ConfigurationDatasource{},

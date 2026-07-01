@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewListConfigCommand(cli *app.ProtheonCLI) *cobra.Command {
+func NewListConfigCommand(cli *app.Protheon) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Short:   "List all ETL run configurations",
@@ -25,7 +25,7 @@ func NewListConfigCommand(cli *app.ProtheonCLI) *cobra.Command {
 	return cmd
 }
 
-func runRun(ctx context.Context, cli *app.ProtheonCLI) error {
+func runRun(ctx context.Context, cli *app.Protheon) error {
 	configs, err := cli.ConfigService.ListConfigs(ctx)
 	if err != nil {
 		return err

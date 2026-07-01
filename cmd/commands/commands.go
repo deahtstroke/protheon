@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ProtheonCmdFunc func(*app.ProtheonCLI) *cobra.Command
+type ProtheonCmdFunc func(*app.Protheon) *cobra.Command
 
 var commands []ProtheonCmdFunc
 

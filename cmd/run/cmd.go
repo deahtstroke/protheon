@@ -1,11 +1,11 @@
 package run
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/deahtstroke/protheon/cmd/commands"
+	"github.com/deahtstroke/protheon/cmd/completion"
 	"github.com/deahtstroke/protheon/internal/app"
 	"github.com/deahtstroke/protheon/internal/core/engine"
 	"github.com/pelletier/go-toml/v2"
@@ -18,6 +18,8 @@ func init() {
 }
 
 const (
+	dryRunFlag          string = "dry-run"
+	sampleSizeFlag      string = "sample"
 	inputFlag           string = "input"
 	extensionFlag       string = "extension"
 	compressionFlag     string = "compression"
@@ -27,69 +29,69 @@ const (
 	configFileFlag      string = "config-file"
 )
 
-func newRunCommand(cli *app.ProtheonCLI) *cobra.Command {
-	var config engine.ETLConfig
-	var configPath string
+func newRunCommand(cli *app.Protheon) *cobra.Command {
+	var opts engine.RunOpts
+	var dryRun bool
+	var pipelinePath string
 
 	cmd := &cobra.Command{
-		Use:   "run",
-		Short: "Runs a Protheon ETL pipeline once",
-		Long:  "Executes a set of steps with the associated Protheon ETL pipeline",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			configPath, err := cmd.Flags().GetString(configFileFlag)
-			if err != nil {
-				return fmt.Errorf("Error retrieving flag `config`: %s", err)
-			}
-
-			if configPath == "" {
-				required := []string{inputFlag, extensionFlag, transformationsFlag, datasourceTableFlag, datasourceUrlFlag}
-				for _, req := range required {
-					f, err := cmd.Flags().GetString(req)
-					if err != nil {
-						return fmt.Errorf("Error retrieving required flag `%s`: %s", req, err)
-					}
-
-					if f == "" {
-						return fmt.Errorf("Required flag --%s not set (or provide a config file with --f)", req)
-					}
-				}
-				return nil
-			}
-
-			// Parse config if config is not ""
-			f, err := os.ReadFile(configPath)
-			if err != nil {
-				return fmt.Errorf("Unable to open file with config path %s: %v", configPath, err)
-			}
-
-			err = yaml.Unmarshal(f, &config)
-			if err != nil {
-				err = toml.Unmarshal(f, &config)
-			}
-
-			return err
-		},
+		Use:               "run",
+		Short:             "Runs a Protheon ETL pipeline once",
+		Long:              "Executes a set of steps with the associated Protheon ETL pipeline",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completion.ListConfigs(cli, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			engine, err := engine.NewEngine()
 			if err != nil {
 				return err
 			}
+
 			defer engine.Cleanup()
 
-			if err := engine.Run(config); err != nil {
-				log.Print(err)
+			aliasOrId := args[0]
+			if aliasOrId == "" {
+				slog.Error("Expecting Id or Alias as an argument")
+				return err
+			}
+
+			runConfig, err := cli.ConfigService.GetConfigByAliasOrId(cli.GlobalCtx, aliasOrId)
+			if err != nil {
+				slog.Error("Unable to retrieve run configuration", "AliasOrID", aliasOrId)
+				return err
+			}
+
+			f, err := os.ReadFile(runConfig.Path)
+			if err != nil {
+				slog.Error("Unable to read run configuration", "Config", runConfig, "Error", err)
+				return err
+			}
+
+			err = yaml.Unmarshal(f, &opts)
+			if err != nil {
+				err = toml.Unmarshal(f, &opts)
+				if err != nil {
+					return err
+				}
+			}
+
+			if err := engine.Run(opts, dryRun); err != nil {
+				slog.ErrorContext(cli.GlobalCtx, "There was an error running the pipeline", "idOrAlias", aliasOrId, "error", err)
 			}
 
 			return nil
 		},
 	}
 
-	cmd.Flags().StringVarP(&config.Input.Path, inputFlag, "i", "", "Path of the input file to process")
-	cmd.Flags().StringVarP(&config.Input.Extension, extensionFlag, "e", "", "Extension/format of the input file, e.g., 'json', 'jsonl', 'csv'")
-	cmd.Flags().StringVarP(&config.Input.Compress, compressionFlag, "c", "", "Compression strategy of the input file")
-	cmd.Flags().StringVarP(&config.Transformations, transformationsFlag, "s", "", "List of Transformation scripts written in Lua")
-	cmd.Flags().StringVar(&config.Datasource.URL, datasourceUrlFlag, "", "Datasource URL, .e.g, postres://user:password@localhost:5432/db_name")
-	cmd.Flags().StringVarP(&config.Datasource.Table, datasourceTableFlag, "t", "", "Datasource table to insert data to")
-	cmd.Flags().StringVarP(&configPath, configFileFlag, "f", "", "Path to config to a YAML/TOML config file for the current ETL run")
+	flags := cmd.Flags()
+	flags.StringVarP(&opts.Input.Path, inputFlag, "i", "", "Path of the input file to process")
+	flags.StringVarP(&opts.Input.Extension, extensionFlag, "e", "", "Extension/format of the input file, e.g., 'json', 'jsonl', 'csv'")
+	flags.StringVarP(&opts.Input.Compress, compressionFlag, "c", "", "Compression strategy of the input file")
+	flags.StringVarP(&opts.Transformations, transformationsFlag, "s", "", "List of Transformation scripts written in Lua")
+	flags.StringVar(&opts.Datasource.URL, datasourceUrlFlag, "", "Datasource URL, .e.g, postres://user:password@localhost:5432/db_name")
+	flags.StringVarP(&opts.Datasource.Table, datasourceTableFlag, "t", "", "Datasource table to insert data to")
+	flags.StringVarP(&pipelinePath, configFileFlag, "f", "", "Path to config to a YAML/TOML config file for the current ETL run")
+	flags.BoolVar(&dryRun, dryRunFlag, false, "Whether to execute a dry run")
+	flags.Int64Var(&opts.Input.SampleSize, sampleSizeFlag, 0, "Input sample size to run for")
+
 	return cmd
 }

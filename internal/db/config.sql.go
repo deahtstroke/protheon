@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 
-	"github.com/deahtstroke/protheon/internal/errors"
+	protheonErrors "github.com/deahtstroke/protheon/internal/errors"
 )
 
 const createConfg = `
@@ -91,7 +91,7 @@ const getConfigByIdOrAlias = `
 	WHERE c.id = ? OR c.alias = ?
 `
 
-func (r *Repository) GetConfigPathByAliasOrId(ctx context.Context, identifier string) (Config, error) {
+func (r *Repository) GetConfigByAliasOrId(ctx context.Context, identifier string) (Config, error) {
 	var config Config
 	row := r.db.QueryRowContext(ctx, getConfigByIdOrAlias, identifier, identifier)
 	err := row.Scan(&config.Id, &config.Path, &config.Alias, &config.CreatedAt)
