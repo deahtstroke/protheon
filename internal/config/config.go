@@ -15,7 +15,7 @@ type ConfigFormat interface {
 	GetTemplate() string
 
 	// Unmarshals the content of the ETLConfig to a Go struct
-	ToETLConfig([]byte) (*engine.ETLConfig, error)
+	ToETLConfig([]byte) (*engine.RunOpts, error)
 
 	// The pattern that's used by the created temporary file before
 	// atomically writing it to the config directory

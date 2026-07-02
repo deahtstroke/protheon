@@ -18,7 +18,7 @@ import (
 	_ "github.com/deahtstroke/protheon/cmd/run"
 )
 
-func createRootCommand(cli *app.ProtheonCLI) *cobra.Command {
+func createRootCommand(cli *app.Protheon) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "protheon",
 		Short: "CLI-based ETL application",

@@ -4,12 +4,9 @@ if record.firstName == "Grettel" then
 end
 
 if record.firstName == "Jorge" then
-	record.name = "jor" .. " Peluche " .. record.lastName
+	record.name = "Jor" .. " Peluche " .. record.lastName
 end
 
 if record.firstName == "Daniel" then
-	record.name = "Danieasllllll" .. " Peluche " .. record.lastName
+	record.name = "Dani" .. "Peluche " .. record.lastName
 end
-
-record.firstName = nil
-record.lastName = nil

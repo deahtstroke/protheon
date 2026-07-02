@@ -10,7 +10,7 @@ func init() {
 	commands.RegisterCommand(newConfigCommand)
 }
 
-func newConfigCommand(cli *app.ProtheonCLI) *cobra.Command {
+func newConfigCommand(cli *app.Protheon) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config COMMAND",
 		Short: "Manage saved Protheon ETL configs",

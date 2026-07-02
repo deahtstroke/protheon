@@ -17,7 +17,7 @@ type CreateConfigOpts struct {
 	Alias string
 }
 
-func NewCreateConfigCommand(cli *app.ProtheonCLI) *cobra.Command {
+func NewCreateConfigCommand(cli *app.Protheon) *cobra.Command {
 	var opts CreateConfigOpts
 	cmd := &cobra.Command{
 		Use:   "create",
